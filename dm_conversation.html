@@ -1,0 +1,138 @@
+<!-- templates/dm_conversation.html -->
+{% extends 'base.html' %}
+{% block title %}محادثة مع {{ other.username }} — توشن{% endblock %}
+
+{% block content %}
+<div class="main-layout">
+  <aside class="left-sidebar">
+    <div class="glass-card p-0">
+      <ul class="sidebar-menu">
+        <li><a href="/"><i class="fas fa-home"></i> الرئيسية</a></li>
+        <li><a href="/messages" class="active"><i class="fas fa-envelope"></i> الرسائل</a></li>
+        <li><a href="/notifications"><i class="fas fa-bell"></i> الإشعارات</a></li>
+        <li><a href="/profile/{{ current_user.handle }}"><i class="fas fa-user-circle"></i> ملفي</a></li>
+      </ul>
+    </div>
+  </aside>
+
+  <main>
+    <div class="glass-card p-0" style="overflow:hidden;display:flex;flex-direction:column;min-height:560px">
+      <!-- Header -->
+      <div class="p-3 border-bottom d-flex align-items-center gap-3" style="border-color:var(--card-border)!important">
+        <a href="/messages" class="action-btn"><i class="fas fa-arrow-right"></i></a>
+        <a href="/profile/{{ other.handle }}" class="d-flex align-items-center gap-2 text-decoration-none flex-grow-1">
+          {% if other.avatar %}
+          <img src="{{ url_for('static', filename='uploads/' + other.avatar) }}"
+               class="avatar" style="width:40px;height:40px">
+          {% else %}
+          <div class="avatar-placeholder" style="width:40px;height:40px;font-size:.95rem">{{ other.username[0] }}</div>
+          {% endif %}
+          <div>
+            <div class="fw-bold" style="font-size:.92rem;color:var(--text)">
+              {{ other.username }}
+              {% if other.verified %}<i class="fas fa-circle-check verified-badge ms-1"></i>{% endif %}
+            </div>
+            <div style="font-size:.78rem;color:var(--text3)">@{{ other.handle }}</div>
+          </div>
+        </a>
+        <a href="/profile/{{ other.handle }}" class="action-btn" title="عرض الملف">
+          <i class="fas fa-user"></i>
+        </a>
+      </div>
+
+      <!-- Messages area -->
+      <div class="chat-area flex-grow-1">
+        {% if msgs %}
+        {% for msg in msgs %}
+        <div class="msg-row {{ 'sent' if msg.sender_id == current_user.id else 'received' }}">
+          <div>
+            <div class="msg-bubble {{ 'msg-sent' if msg.sender_id == current_user.id else 'msg-received' }}">
+              {% if msg.content %}{{ msg.content }}{% endif %}
+              {% if msg.media_url %}
+              <div class="mt-1">
+                {% if msg.media_type == 'video' %}
+                <video controls style="max-width:220px;border-radius:10px">
+                  <source src="{{ url_for('static', filename='uploads/' + msg.media_url) }}">
+                </video>
+                {% else %}
+                <img src="{{ url_for('static', filename='uploads/' + msg.media_url) }}"
+                     style="max-width:220px;border-radius:10px">
+                {% endif %}
+              </div>
+              {% endif %}
+            </div>
+            <div class="msg-time {{ 'text-end' if msg.sender_id == current_user.id else 'text-start' }}">
+              {{ msg.created_at[11:16] }}
+            </div>
+          </div>
+        </div>
+        {% endfor %}
+        {% else %}
+        <div class="empty-state" style="margin:auto">
+          <i class="fas fa-comment-dots" style="font-size:2.5rem"></i>
+          <p style="font-size:.9rem">ابدأ المحادثة مع {{ other.username }}</p>
+        </div>
+        {% endif %}
+      </div>
+
+      <!-- Input -->
+      <div class="p-3 border-top" style="border-color:var(--card-border)!important">
+        <form method="POST" action="/messages/{{ other.handle }}" enctype="multipart/form-data">
+          <div class="d-flex gap-2 align-items-end">
+            <div class="flex-grow-1">
+              <textarea name="content" class="compose-textarea w-100" rows="1"
+                        placeholder="اكتب رسالتك..." style="min-height:44px"
+                        data-maxlength="1000"></textarea>
+              <div id="msg-media-preview" class="upload-preview"></div>
+            </div>
+            <label class="compose-tool-btn mb-1" title="إرفاق وسائط">
+              <i class="fas fa-paperclip"></i>
+              <input type="file" name="media" accept="image/*,video/*" class="d-none"
+                     onchange="previewMsgMedia(this)">
+            </label>
+            <button type="submit" class="btn-brand mb-1" style="padding:.5rem .9rem">
+              <i class="fas fa-paper-plane"></i>
+            </button>
+          </div>
+        </form>
+      </div>
+    </div>
+  </main>
+
+  <aside class="right-sidebar">
+    <div class="glass-card sidebar-section">
+      <div class="sidebar-title"><i class="fas fa-user" style="color:var(--brand)"></i> معلومات</div>
+      <a href="/profile/{{ other.handle }}" style="text-decoration:none;color:var(--text)">
+        <div class="text-center p-2">
+          {% if other.avatar %}
+          <img src="{{ url_for('static', filename='uploads/' + other.avatar) }}"
+               class="avatar" style="width:70px;height:70px;margin:0 auto .5rem">
+          {% else %}
+          <div class="avatar-placeholder mx-auto mb-2" style="width:70px;height:70px;font-size:1.5rem">{{ other.username[0] }}</div>
+          {% endif %}
+          <div class="fw-bold">{{ other.username }}</div>
+          <div style="color:var(--text3);font-size:.82rem">@{{ other.handle }}</div>
+          {% if other.bio %}
+          <div style="font-size:.82rem;color:var(--text2);margin-top:.5rem">{{ other.bio }}</div>
+          {% endif %}
+        </div>
+      </a>
+    </div>
+  </aside>
+</div>
+
+<script>
+function previewMsgMedia(inp) {
+  const file = inp.files[0];
+  if (!file) return;
+  const url = URL.createObjectURL(file);
+  const prev = document.getElementById('msg-media-preview');
+  if (file.type.startsWith('video/')) {
+    prev.innerHTML = `<video src="${url}" style="max-width:150px;border-radius:10px;margin-top:.5rem" controls></video>`;
+  } else {
+    prev.innerHTML = `<img src="${url}" style="max-width:150px;border-radius:10px;margin-top:.5rem">`;
+  }
+  prev.style.display = 'block';
+}
+</script>
+{% endblock %}

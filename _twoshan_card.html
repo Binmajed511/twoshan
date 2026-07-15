@@ -1,0 +1,211 @@
+<!-- templates/_twoshan_card.html -->
+<div class="glass-card twoshan-card" id="twoshan-{{ t.id }}">
+
+  <!-- Pinned indicator -->
+  {% if t.is_pinned %}
+  <div class="pinned-tag"><i class="fas fa-thumbtack"></i> توشة مثبتة</div>
+  {% endif %}
+
+  <!-- Retwoshan indicator -->
+  {% if t.retwoshan_from_id %}
+  <div class="retwoshan-label">
+    <i class="fas fa-retweet" style="color:var(--success)"></i>
+    {{ t.author.username }} أعاد توشن هذا
+  </div>
+  {% endif %}
+
+  <!-- Header -->
+  <div class="twoshan-header">
+    <a href="/profile/{{ t.author.handle }}" style="position:relative;display:inline-block">
+      {% if t.author.avatar %}
+      <img src="{{ url_for('static', filename='uploads/' + t.author.avatar) }}"
+           class="twoshan-avatar" alt="{{ t.author.username }}">
+      {% else %}
+      <div class="avatar-placeholder twoshan-avatar" style="font-size:1rem">{{ t.author.username[0] if t.author.username else '؟' }}</div>
+      {% endif %}
+      <span class="online-dot {{ 'online' if t.author.online else 'offline' }}" title="{{ 'متصل الآن' if t.author.online else 'غير متصل' }}"></span>
+    </a>
+    <div class="twoshan-meta">
+      <div class="d-flex align-items-center gap-1 flex-wrap">
+        <a href="/profile/{{ t.author.handle }}" class="twoshan-username">{{ t.author.username }}</a>
+        {% if t.author.verified %}
+        <i class="fas fa-circle-check verified-badge" title="حساب موثق"></i>
+        {% endif %}
+        {% if t.author.vip %}
+        <span class="vip-badge">VIP</span>
+        {% endif %}
+        {% if t.author.is_admin %}
+        <span class="admin-badge">مشرف</span>
+        {% endif %}
+        <span class="twoshan-handle">@{{ t.author.handle }}</span>
+        <span class="twoshan-time">· {{ t.created_at[:10] }}</span>
+      </div>
+    </div>
+
+    <!-- Options dropdown -->
+    <div class="dropdown ms-auto">
+      <button class="action-btn" data-bs-toggle="dropdown">
+        <i class="fas fa-ellipsis-h"></i>
+      </button>
+      <ul class="dropdown-menu dropdown-menu-glass dropdown-menu-start">
+        <li><a class="dropdown-item" href="/twoshan/{{ t.id }}">
+          <i class="fas fa-external-link-alt me-2"></i> فتح التوشة
+        </a></li>
+        {% if current_user %}
+        <li><a class="dropdown-item" href="/messages/{{ t.author.handle }}">
+          <i class="fas fa-envelope me-2"></i> مراسلة خاصة
+        </a></li>
+        <li>
+          <button class="dropdown-item"
+                  data-bs-toggle="modal" data-bs-target="#reportModal"
+                  data-twoshan="{{ t.id }}">
+            <i class="fas fa-flag me-2 text-danger"></i> <span class="text-danger">إبلاغ</span>
+          </button>
+        </li>
+        {% if t.author.handle != current_user.handle %}
+        <li>
+          <form action="/mute/{{ t.author.id }}" method="POST" class="d-inline">
+            <button class="dropdown-item" type="submit">
+              <i class="fas fa-volume-mute me-2"></i> كتم المستخدم
+            </button>
+          </form>
+        </li>
+        <li>
+          <form action="/block/{{ t.author.id }}" method="POST" class="d-inline">
+            <button class="dropdown-item text-danger" type="submit">
+              <i class="fas fa-ban me-2"></i> حظر المستخدم
+            </button>
+          </form>
+        </li>
+        {% endif %}
+        {% if t.author.handle == current_user.handle or current_user.is_admin %}
+        <li><hr class="dropdown-divider" style="border-color:var(--card-border)"></li>
+        <li>
+          <form action="/delete/{{ t.id }}" method="POST" onsubmit="return confirm('حذف هذه التوشة؟')">
+            <button class="dropdown-item text-danger" type="submit">
+              <i class="fas fa-trash me-2"></i> حذف التوشة
+            </button>
+          </form>
+        </li>
+        {% endif %}
+        {% if current_user.is_admin %}
+        <li>
+          <form action="/admin/action" method="POST">
+            <input type="hidden" name="action" value="pin_twoshan">
+            <input type="hidden" name="target_id" value="{{ t.id }}">
+            <button class="dropdown-item" type="submit">
+              <i class="fas fa-thumbtack me-2" style="color:var(--brand)"></i>
+              {{ 'إلغاء التثبيت' if t.is_pinned else 'تثبيت التوشة' }}
+            </button>
+          </form>
+        </li>
+        {% endif %}
+        {% endif %}
+      </ul>
+    </div>
+  </div>
+
+  <!-- Original twoshan (if retwoshan) -->
+  {% if t.get('original') %}
+  <div style="border:1px solid var(--card-border);border-radius:14px;padding:.75rem;margin-bottom:.75rem;background:var(--bg3)">
+    <div style="font-size:.82rem;color:var(--text3);margin-bottom:.4rem">
+      <a href="/profile/{{ t.original.handle }}" style="color:var(--brand);text-decoration:none;font-weight:700">@{{ t.original.handle }}</a> ·
+      {{ t.original.created_at[:10] if t.original else '' }}
+    </div>
+    <div style="font-size:.9rem;color:var(--text)">{{ t.original.content }}</div>
+  </div>
+  {% endif %}
+
+  <!-- Content -->
+  <div class="twoshan-content">{{ t.content_html | safe }}</div>
+
+  <!-- Media -->
+  {% if t.media_url %}
+  <div class="twoshan-media">
+    {% if t.media_type == 'video' %}
+    <video controls preload="metadata">
+      <source src="{{ url_for('static', filename='uploads/' + t.media_url) }}">
+    </video>
+    {% else %}
+    <a href="{{ url_for('static', filename='uploads/' + t.media_url) }}" target="_blank">
+      <img src="{{ url_for('static', filename='uploads/' + t.media_url) }}"
+           alt="وسائط التوشة" loading="lazy">
+    </a>
+    {% endif %}
+  </div>
+  {% endif %}
+
+  <!-- Poll -->
+  {% if t.get('poll') %}
+  <div class="poll-container">
+    <div style="font-size:.9rem;font-weight:600;color:var(--text);margin-bottom:.5rem">
+      📊 {{ t.poll.question }}
+    </div>
+    {% for opt in t.poll_options %}
+    {% set pct = ((opt.votes / t.poll_total * 100) | round | int) if t.poll_total > 0 else 0 %}
+    <div class="poll-option {{ 'voted' if t.poll_voted else '' }}"
+         data-option-id="{{ opt.id }}"
+         data-voted="{{ 'true' if t.poll_voted else 'false' }}">
+      <div class="poll-bar" style="width:{{ pct }}%"></div>
+      <div class="poll-option-content">
+        <span>{% if t.poll_voted == opt.id %}<i class="fas fa-check me-1" style="color:var(--brand)"></i>{% endif %}{{ opt.text }}</span>
+        <span class="poll-pct">{{ pct }}%</span>
+      </div>
+    </div>
+    {% endfor %}
+    <div class="poll-total">{{ t.poll_total }} صوت</div>
+  </div>
+  {% endif %}
+
+  <!-- Actions -->
+  <div class="twoshan-actions mt-1">
+    <!-- Reply -->
+    <button class="action-btn"
+            data-bs-toggle="modal" data-bs-target="#replyModal"
+            data-twoshan="{{ t.id }}"
+            data-author="{{ t.author.handle }}">
+      <i class="far fa-comment"></i>
+      <span>{{ t.replies }}</span>
+    </button>
+
+    <!-- Retwoshan -->
+    <button class="action-btn retwoshan-btn {{ 'retwoshan_ed' if t.retwoshan_ed else '' }}"
+            data-id="{{ t.id }}">
+      <i class="fas fa-retweet"></i>
+      <span class="rt-count">{{ t.reposts }}</span>
+    </button>
+
+    <!-- Like -->
+    <button class="action-btn like-btn {{ 'liked' if t.liked else '' }}"
+            data-id="{{ t.id }}">
+      {% if t.liked %}
+      <i class="fas fa-heart"></i>
+      {% else %}
+      <i class="far fa-heart"></i>
+      {% endif %}
+      <span class="like-count">{{ t.likes }}</span>
+    </button>
+
+    <!-- Bookmark -->
+    <button class="action-btn bookmark-btn {{ 'bookmarked' if t.bookmarked else '' }}"
+            data-id="{{ t.id }}">
+      {% if t.bookmarked %}
+      <i class="fas fa-bookmark"></i>
+      {% else %}
+      <i class="far fa-bookmark"></i>
+      {% endif %}
+      <span class="bm-count">{{ t.likes }}</span>
+    </button>
+
+    <!-- Views -->
+    <span class="action-btn views-count" style="cursor:default;opacity:.7" title="المشاهدات">
+      <i class="far fa-eye"></i>
+      <span class="view-count-num">{{ t.views|default(0) }}</span>
+    </span>
+
+    <!-- Share (copy link) -->
+    <button class="action-btn" onclick="navigator.clipboard.writeText(window.location.origin+'/twoshan/{{ t.id }}')">
+      <i class="fas fa-share-alt"></i>
+    </button>
+  </div>
+</div>

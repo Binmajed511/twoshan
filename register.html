@@ -1,0 +1,96 @@
+<!-- templates/register.html -->
+{% extends 'base.html' %}
+{% block title %}إنشاء حساب — توشن{% endblock %}
+
+{% block content %}
+<div class="auth-container">
+  <div style="position:fixed;inset:0;pointer-events:none;overflow:hidden">
+    <div style="position:absolute;width:500px;height:500px;border-radius:50%;background:radial-gradient(circle,rgba(108,99,255,0.15),transparent);top:-150px;left:-150px"></div>
+    <div style="position:absolute;width:350px;height:350px;border-radius:50%;background:radial-gradient(circle,rgba(6,214,160,0.1),transparent);bottom:-50px;right:-50px"></div>
+  </div>
+
+  <div class="auth-card glass-card">
+    <div class="auth-logo">توشن</div>
+    <p class="auth-tagline">انضم لمجتمع توشن الآن! 🚀</p>
+
+    {% with messages = get_flashed_messages(with_categories=true) %}
+    {% for cat, msg in messages %}
+    <div class="flash-msg flash-{{ cat }} mb-3">{{ msg }}</div>
+    {% endfor %}
+    {% endwith %}
+
+    <form method="POST" action="/register">
+      <div class="mb-3">
+        <label style="font-weight:600;color:var(--text2);font-size:.9rem;margin-bottom:.4rem;display:block">
+          <i class="fas fa-id-badge me-1" style="color:var(--brand)"></i> الاسم المعروض
+        </label>
+        <input type="text" name="username" class="form-control-glass"
+               placeholder="اسمك الكامل" required maxlength="50">
+      </div>
+      <div class="mb-3">
+        <label style="font-weight:600;color:var(--text2);font-size:.9rem;margin-bottom:.4rem;display:block">
+          <i class="fas fa-at me-1" style="color:var(--brand)"></i> المعرف الفريد (@handle)
+        </label>
+        <div style="position:relative">
+          <span style="position:absolute;right:12px;top:50%;transform:translateY(-50%);color:var(--text3)">@</span>
+          <input type="text" name="handle" class="form-control-glass" style="padding-right:2rem"
+                 placeholder="معرفك_الفريد" required maxlength="20"
+                 pattern="[a-zA-Z0-9_]{3,20}" title="3-20 حرف: أحرف إنجليزية، أرقام، _">
+        </div>
+        <small style="color:var(--text3);font-size:.78rem">3-20 حرف: أحرف إنجليزية، أرقام، _ فقط</small>
+      </div>
+      <div class="mb-3">
+        <label style="font-weight:600;color:var(--text2);font-size:.9rem;margin-bottom:.4rem;display:block">
+          <i class="fas fa-envelope me-1" style="color:var(--brand)"></i> البريد الإلكتروني
+        </label>
+        <input type="email" name="email" class="form-control-glass"
+               placeholder="بريدك@مثال.com" required>
+      </div>
+      <div class="mb-3">
+        <label style="font-weight:600;color:var(--text2);font-size:.9rem;margin-bottom:.4rem;display:block">
+          <i class="fas fa-lock me-1" style="color:var(--brand)"></i> كلمة المرور
+        </label>
+        <div style="position:relative">
+          <input type="password" name="password" id="pass1" class="form-control-glass"
+                 placeholder="6 أحرف على الأقل" required minlength="6">
+          <button type="button" onclick="togglePass('pass1','eye1')"
+                  style="position:absolute;left:12px;top:50%;transform:translateY(-50%);background:none;border:none;color:var(--text3);cursor:pointer">
+            <i class="far fa-eye" id="eye1"></i>
+          </button>
+        </div>
+      </div>
+      <div class="mb-4">
+        <label style="font-weight:600;color:var(--text2);font-size:.9rem;margin-bottom:.4rem;display:block">
+          <i class="fas fa-lock me-1" style="color:var(--brand)"></i> تأكيد كلمة المرور
+        </label>
+        <input type="password" name="confirm" class="form-control-glass"
+               placeholder="أعد كتابة كلمة المرور" required>
+      </div>
+      <button type="submit" class="btn-brand w-100" style="padding:.75rem">
+        <i class="fas fa-rocket me-2"></i> إنشاء الحساب
+      </button>
+    </form>
+
+    <p class="text-center mt-4" style="color:var(--text3);font-size:.88rem">
+      لديك حساب بالفعل؟
+      <a href="/login" style="color:var(--brand);font-weight:700;text-decoration:none">تسجيل الدخول</a>
+    </p>
+
+    <div class="text-center mt-2">
+      <button class="theme-toggle mx-auto" onclick="ThemeManager.toggle()" id="theme-toggle-btn">
+        <i class="fas fa-moon"></i>
+      </button>
+    </div>
+  </div>
+</div>
+
+<script>
+function togglePass(id, eyeId) {
+  const inp = document.getElementById(id);
+  const eye = document.getElementById(eyeId);
+  if (inp.type === 'password') { inp.type = 'text'; eye.className = 'far fa-eye-slash'; }
+  else { inp.type = 'password'; eye.className = 'far fa-eye'; }
+}
+document.addEventListener('DOMContentLoaded', () => ThemeManager.init());
+</script>
+{% endblock %}

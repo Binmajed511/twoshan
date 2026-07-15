@@ -1,0 +1,98 @@
+<!-- templates/admin/messages.html -->
+{% extends 'base.html' %}
+{% block title %}مراقبة الرسائل — لوحة الإدارة{% endblock %}
+
+{% block content %}
+<div class="container-fluid" style="max-width:1200px;margin:1.5rem auto;padding:0 1rem;position:relative;z-index:1">
+  <div class="d-flex align-items-center justify-content-between mb-4 flex-wrap gap-2">
+    <div>
+      <h4 class="fw-bold mb-0">
+        <i class="fas fa-envelope-open-text me-2" style="color:var(--brand)"></i>
+        مراقبة الرسائل الخاصة
+      </h4>
+      <small style="color:var(--danger)">
+        <i class="fas fa-exclamation-triangle me-1"></i>
+        هذه الصفحة مخصصة للإدارة فقط — لمراجعة الرسائل المبلّغ عنها
+      </small>
+    </div>
+    <a href="/admin" class="btn-outline-brand" style="font-size:.85rem;padding:.4rem .9rem">
+      <i class="fas fa-arrow-right me-1"></i> لوحة التحكم
+    </a>
+  </div>
+
+  <!-- Warning banner -->
+  <div class="glass-card p-3 mb-4" style="border-color:rgba(245,158,11,.3);background:rgba(245,158,11,.08)">
+    <div class="d-flex align-items-center gap-2">
+      <i class="fas fa-shield-alt" style="color:#f59e0b;font-size:1.2rem"></i>
+      <div style="font-size:.88rem;color:var(--text2)">
+        <strong>تنبيه:</strong> هذا النظام مخصص لمراجعة الرسائل المشبوهة أو المبلّغ عنها فقط، وذلك لضمان سلامة المنصة. 
+        يُحظر استخدام هذه الصلاحية لأغراض شخصية.
+      </div>
+    </div>
+  </div>
+
+  <div class="glass-card p-0" style="overflow:hidden">
+    <div style="overflow-x:auto">
+      <table class="admin-table">
+        <thead>
+          <tr>
+            <th>#</th>
+            <th>المرسل</th>
+            <th>المستقبل</th>
+            <th>الرسالة</th>
+            <th>التاريخ</th>
+            <th>إجراء</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for msg in msgs %}
+          <tr {% if msg.is_deleted_admin %}style="opacity:.4"{% endif %}>
+            <td style="color:var(--text3);font-size:.78rem">{{ msg.id }}</td>
+            <td>
+              <a href="/profile/{{ msg.sender_handle }}" style="color:var(--brand);text-decoration:none;font-size:.85rem;font-weight:600">
+                @{{ msg.sender_handle }}
+              </a>
+              <div style="font-size:.75rem;color:var(--text3)">{{ msg.sender_name }}</div>
+            </td>
+            <td>
+              <a href="/profile/{{ msg.receiver_handle }}" style="color:var(--accent);text-decoration:none;font-size:.85rem;font-weight:600">
+                @{{ msg.receiver_handle }}
+              </a>
+              <div style="font-size:.75rem;color:var(--text3)">{{ msg.receiver_name }}</div>
+            </td>
+            <td style="max-width:280px">
+              {% if msg.is_deleted_admin %}
+              <span style="color:var(--text3);font-style:italic;font-size:.82rem">تم الحذف بواسطة الإدارة</span>
+              {% else %}
+              <div style="font-size:.83rem;color:var(--text);overflow:hidden;white-space:nowrap;text-overflow:ellipsis">
+                {% if msg.content %}{{ msg.content[:120] }}{% endif %}
+                {% if msg.media_url %}
+                <span class="badge" style="background:rgba(108,99,255,.15);color:var(--brand);font-size:.68rem">
+                  <i class="fas fa-paperclip me-1"></i>{{ 'فيديو' if msg.media_type=='video' else 'صورة' }}
+                </span>
+                {% endif %}
+              </div>
+              {% endif %}
+            </td>
+            <td style="color:var(--text3);font-size:.78rem;white-space:nowrap">{{ msg.created_at[:16] }}</td>
+            <td>
+              {% if not msg.is_deleted_admin %}
+              <form action="/admin/action" method="POST" onsubmit="return confirm('حذف هذه الرسالة؟')">
+                <input type="hidden" name="action" value="delete_message">
+                <input type="hidden" name="target_id" value="{{ msg.id }}">
+                <button class="action-btn" type="submit" title="حذف الرسالة" style="color:var(--danger)">
+                  <i class="fas fa-trash"></i>
+                </button>
+              </form>
+              {% else %}
+              <span style="color:var(--text3);font-size:.75rem"><i class="fas fa-check"></i></span>
+              {% endif %}
+            </td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+</div>
+{% endblock %}

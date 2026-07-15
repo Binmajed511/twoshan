@@ -1,0 +1,100 @@
+<!-- templates/admin/reports.html -->
+{% extends 'base.html' %}
+{% block title %}التبليغات — لوحة الإدارة{% endblock %}
+
+{% block content %}
+<div class="container-fluid" style="max-width:1100px;margin:1.5rem auto;padding:0 1rem;position:relative;z-index:1">
+  <div class="d-flex align-items-center justify-content-between mb-4 flex-wrap gap-2">
+    <h4 class="fw-bold mb-0">
+      <i class="fas fa-flag me-2" style="color:var(--danger)"></i>
+      التبليغات المعلقة ({{ reports|length }})
+    </h4>
+    <a href="/admin" class="btn-outline-brand" style="font-size:.85rem;padding:.4rem .9rem">
+      <i class="fas fa-arrow-right me-1"></i> لوحة التحكم
+    </a>
+  </div>
+
+  {% if reports %}
+  <div class="glass-card p-0" style="overflow:hidden">
+    {% for r in reports %}
+    <div class="p-4 border-bottom" style="border-color:var(--card-border)!important">
+      <div class="d-flex justify-content-between align-items-start flex-wrap gap-3">
+        <div class="flex-grow-1">
+          <!-- Reporter info -->
+          <div class="d-flex align-items-center gap-2 mb-2">
+            <span class="badge" style="background:rgba(239,68,68,.15);color:#ef4444;font-size:.72rem">
+              <i class="fas fa-flag me-1"></i>بلاغ
+            </span>
+            <span style="font-size:.82rem;color:var(--text3)">
+              من <a href="/profile/{{ r.reporter_handle }}" style="color:var(--brand);text-decoration:none">@{{ r.reporter_handle }}</a>
+              · {{ r.created_at[:10] }}
+            </span>
+          </div>
+
+          <!-- Reason -->
+          <div class="mb-2">
+            <span class="fw-bold" style="font-size:.88rem">السبب:</span>
+            <span class="badge" style="background:rgba(245,158,11,.15);color:#f59e0b;font-size:.78rem;margin-right:.3rem">
+              {{ r.reason }}
+            </span>
+          </div>
+
+          <!-- Twoshan content -->
+          <div style="background:var(--bg3);border-radius:12px;padding:1rem;border-right:3px solid var(--danger)">
+            <div class="d-flex align-items-center gap-2 mb-1">
+              <a href="/profile/{{ r.twoshan_handle }}" style="color:var(--brand);text-decoration:none;font-weight:700;font-size:.85rem">
+                @{{ r.twoshan_handle }}
+              </a>
+              <span style="color:var(--text3);font-size:.78rem">({{ r.twoshan_author }})</span>
+            </div>
+            <div style="font-size:.88rem;color:var(--text)">{{ r.twoshan_content[:200] }}</div>
+          </div>
+        </div>
+
+        <!-- Actions -->
+        <div class="d-flex flex-column gap-2">
+          <!-- Delete twoshan -->
+          <form action="/admin/action" method="POST" onsubmit="return confirm('حذف التوشة نهائياً؟')">
+            <input type="hidden" name="action" value="delete_twoshan">
+            <input type="hidden" name="target_id" value="{{ r.twoshan_id }}">
+            <button class="btn-brand w-100" type="submit" style="background:linear-gradient(135deg,#ef4444,#dc2626);font-size:.82rem;padding:.4rem .8rem">
+              <i class="fas fa-trash me-1"></i> حذف التوشة
+            </button>
+          </form>
+
+          <!-- View twoshan -->
+          <a href="/twoshan/{{ r.twoshan_id }}" class="btn-outline-brand text-center" style="font-size:.82rem;padding:.35rem .8rem">
+            <i class="fas fa-eye me-1"></i> عرض التوشة
+          </a>
+
+          <!-- Resolve -->
+          <form action="/admin/action" method="POST">
+            <input type="hidden" name="action" value="resolve_report">
+            <input type="hidden" name="target_id" value="{{ r.id }}">
+            <button class="btn-outline-brand w-100" type="submit" style="font-size:.82rem;padding:.35rem .8rem;color:var(--success);border-color:var(--success)">
+              <i class="fas fa-check me-1"></i> تم الحل
+            </button>
+          </form>
+
+          <!-- Dismiss -->
+          <form action="/admin/action" method="POST">
+            <input type="hidden" name="action" value="dismiss_report">
+            <input type="hidden" name="target_id" value="{{ r.id }}">
+            <button class="btn-outline-brand w-100" type="submit" style="font-size:.82rem;padding:.35rem .8rem;color:var(--text3);border-color:var(--card-border)">
+              <i class="fas fa-times me-1"></i> رفض البلاغ
+            </button>
+          </form>
+        </div>
+      </div>
+    </div>
+    {% endfor %}
+  </div>
+  {% else %}
+  <div class="glass-card empty-state py-5">
+    <i class="fas fa-check-shield" style="color:var(--success)"></i>
+    <p>لا توجد تبليغات معلقة 🎉</p>
+    <small style="color:var(--text3)">المنصة بأمان تام</small>
+  </div>
+  {% endif %}
+</div>
+{% endblock %}

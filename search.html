@@ -1,0 +1,127 @@
+<!-- templates/search.html -->
+{% extends 'base.html' %}
+{% block title %}بحث{% if q %}: {{ q }}{% endif %} — توشن{% endblock %}
+
+{% block content %}
+<div class="main-layout">
+  <aside class="left-sidebar">
+    <div class="glass-card p-0">
+      <ul class="sidebar-menu">
+        <li><a href="/"><i class="fas fa-home"></i> الرئيسية</a></li>
+        <li><a href="/search" class="active"><i class="fas fa-search"></i> البحث</a></li>
+        <li><a href="/notifications"><i class="fas fa-bell"></i> الإشعارات</a></li>
+        <li><a href="/messages"><i class="fas fa-envelope"></i> الرسائل</a></li>
+        <li><a href="/profile/{{ current_user.handle }}"><i class="fas fa-user-circle"></i> ملفي</a></li>
+      </ul>
+    </div>
+  </aside>
+
+  <main>
+    <div class="glass-card p-4 mb-3">
+      <form method="GET" action="/search">
+        <div class="d-flex gap-2">
+          <div class="search-bar flex-grow-1">
+            <i class="fas fa-search" style="color:var(--text3)"></i>
+            <input type="text" name="q" value="{{ q }}" placeholder="ابحث عن حسابات أو توشنات...">
+          </div>
+          <select name="type" class="form-control-glass" style="width:auto;border-radius:14px">
+            <option value="users" {{ 'selected' if stype=='users' else '' }}>مستخدمون</option>
+            <option value="twoshans" {{ 'selected' if stype=='twoshans' else '' }}>توشنات</option>
+          </select>
+          <button type="submit" class="btn-brand">بحث</button>
+        </div>
+      </form>
+    </div>
+
+    {% if q %}
+    <!-- Tabs -->
+    <div class="feed-tabs mb-3" style="border-radius:16px;overflow:hidden">
+      <a href="/search?q={{ q }}&type=users" class="feed-tab {{ 'active' if stype=='users' else '' }}">
+        <i class="fas fa-users me-1"></i> مستخدمون
+      </a>
+      <a href="/search?q={{ q }}&type=twoshans" class="feed-tab {{ 'active' if stype=='twoshans' else '' }}">
+        <i class="fas fa-feather-alt me-1"></i> توشنات
+      </a>
+    </div>
+
+    {% if stype == 'users' %}
+      {% if results_users %}
+      <div class="glass-card p-0" style="overflow:hidden">
+        {% for u in results_users %}
+        <a href="/profile/{{ u.handle }}" class="user-card">
+          {% if u.avatar %}
+          <img src="{{ url_for('static', filename='uploads/' + u.avatar) }}"
+               class="avatar" style="width:46px;height:46px">
+          {% else %}
+          <div class="avatar-placeholder" style="width:46px;height:46px;font-size:1rem">{{ u.username[0] }}</div>
+          {% endif %}
+          <div class="user-card-info">
+            <div class="user-card-name d-flex align-items-center gap-1">
+              {{ u.username }}
+              {% if u.verified %}<i class="fas fa-circle-check verified-badge"></i>{% endif %}
+              {% if u.vip %}<span class="vip-badge">VIP</span>{% endif %}
+            </div>
+            <div class="user-card-handle">@{{ u.handle }}</div>
+            {% if u.bio %}
+            <div style="font-size:.8rem;color:var(--text3)">{{ u.bio[:80] }}</div>
+            {% endif %}
+          </div>
+          <button class="btn-outline-brand" style="font-size:.82rem;padding:.3rem .8rem">عرض</button>
+        </a>
+        {% endfor %}
+      </div>
+      {% else %}
+      <div class="glass-card empty-state">
+        <i class="fas fa-user-slash"></i>
+        <p>لا توجد نتائج لـ "{{ q }}"</p>
+      </div>
+      {% endif %}
+
+    {% else %}
+      {% if results_twoshans %}
+        {% for t in results_twoshans %}
+        {% include '_twoshan_card.html' %}
+        {% endfor %}
+      {% else %}
+      <div class="glass-card empty-state">
+        <i class="fas fa-search"></i>
+        <p>لا توجد توشنات تحتوي على "{{ q }}"</p>
+      </div>
+      {% endif %}
+    {% endif %}
+
+    {% else %}
+    <!-- No query — show trends -->
+    <div class="glass-card p-4">
+      <div class="sidebar-title mb-3">
+        <i class="fas fa-fire me-2" style="color:var(--danger)"></i>التريندات الأكثر تداولاً
+      </div>
+      {% for trend in trends %}
+      <a href="/hashtag/{{ trend.tag }}" class="d-block text-decoration-none mb-2">
+        <div class="trend-item d-flex justify-content-between align-items-center">
+          <span class="trend-tag" style="font-size:1rem">#{{ trend.tag }}</span>
+          <span class="trend-count">{{ trend.use_count }} توشة</span>
+        </div>
+      </a>
+      {% else %}
+      <p style="color:var(--text3)">لا توجد تريندات بعد</p>
+      {% endfor %}
+    </div>
+    {% endif %}
+  </main>
+
+  <aside class="right-sidebar">
+    <div class="glass-card sidebar-section">
+      <div class="sidebar-title"><i class="fas fa-fire" style="color:var(--danger)"></i> التريندات</div>
+      {% for trend in trends %}
+      <a href="/hashtag/{{ trend.tag }}" class="d-block text-decoration-none">
+        <div class="trend-item">
+          <div class="trend-tag">#{{ trend.tag }}</div>
+          <div class="trend-count">{{ trend.use_count }} توشة</div>
+        </div>
+      </a>
+      {% endfor %}
+    </div>
+  </aside>
+</div>
+{% endblock %}

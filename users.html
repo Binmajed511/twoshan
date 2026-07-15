@@ -1,0 +1,127 @@
+<!-- templates/admin/users.html -->
+{% extends 'base.html' %}
+{% block title %}إدارة المستخدمين — توشن{% endblock %}
+
+{% block content %}
+<div class="container-fluid" style="max-width:1200px;margin:1.5rem auto;padding:0 1rem;position:relative;z-index:1">
+  <div class="d-flex align-items-center justify-content-between mb-4 flex-wrap gap-2">
+    <h4 class="fw-bold mb-0">
+      <i class="fas fa-users me-2" style="color:var(--brand)"></i>
+      إدارة المستخدمين ({{ users|length }})
+    </h4>
+    <div class="d-flex gap-2">
+      <a href="/admin" class="btn-outline-brand" style="font-size:.85rem;padding:.4rem .9rem">
+        <i class="fas fa-arrow-right me-1"></i> لوحة التحكم
+      </a>
+    </div>
+  </div>
+
+  <!-- Search -->
+  <div class="glass-card p-3 mb-3">
+    <div class="search-bar">
+      <i class="fas fa-search" style="color:var(--text3)"></i>
+      <input type="text" id="user-search" placeholder="ابحث عن مستخدم..." oninput="filterUsers(this.value)">
+    </div>
+  </div>
+
+  <div class="glass-card p-0" style="overflow:hidden">
+    <div style="overflow-x:auto">
+      <table class="admin-table" id="users-table">
+        <thead>
+          <tr>
+            <th>#</th>
+            <th>المستخدم</th>
+            <th>المعرف</th>
+            <th>البريد</th>
+            <th>الشارات</th>
+            <th>تاريخ الانضمام</th>
+            <th>الإجراءات</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for u in users %}
+          <tr class="user-row" data-name="{{ u.username|lower }}" data-handle="{{ u.handle|lower }}">
+            <td style="color:var(--text3);font-size:.8rem">{{ u.id }}</td>
+            <td>
+              <div class="d-flex align-items-center gap-2">
+                {% if u.avatar %}
+                <img src="{{ url_for('static', filename='uploads/' + u.avatar) }}"
+                     class="avatar" style="width:34px;height:34px">
+                {% else %}
+                <div class="avatar-placeholder" style="width:34px;height:34px;font-size:.8rem">{{ u.username[0] }}</div>
+                {% endif %}
+                <div>
+                  <div style="font-weight:700;font-size:.88rem">{{ u.username }}</div>
+                </div>
+              </div>
+            </td>
+            <td>
+              <a href="/profile/{{ u.handle }}" style="color:var(--brand);text-decoration:none;font-size:.85rem">@{{ u.handle }}</a>
+            </td>
+            <td style="font-size:.8rem;color:var(--text3)">{{ u.email }}</td>
+            <td>
+              <div class="d-flex gap-1 flex-wrap">
+                {% if u.verified %}<i class="fas fa-circle-check verified-badge" title="موثق"></i>{% endif %}
+                {% if u.vip %}<span class="vip-badge">VIP</span>{% endif %}
+                {% if u.is_admin %}<span class="admin-badge">مشرف</span>{% endif %}
+                {% if u.is_blocked %}<span class="badge bg-danger" style="font-size:.6rem">محظور</span>{% endif %}
+              </div>
+            </td>
+            <td style="color:var(--text3);font-size:.8rem">{{ u.created_at[:10] }}</td>
+            <td>
+              <div class="d-flex gap-1 flex-wrap">
+                <!-- Verify -->
+                <form action="/admin/action" method="POST" class="d-inline">
+                  <input type="hidden" name="action" value="{{ 'unverify_user' if u.verified else 'verify_user' }}">
+                  <input type="hidden" name="target_id" value="{{ u.id }}">
+                  <button class="action-btn" type="submit" title="{{ 'إلغاء التوثيق' if u.verified else 'توثيق' }}"
+                          style="color:{% if u.verified %}var(--brand){% else %}var(--text3){% endif %}">
+                    <i class="fas fa-circle-check"></i>
+                  </button>
+                </form>
+                <!-- VIP -->
+                <form action="/admin/action" method="POST" class="d-inline">
+                  <input type="hidden" name="action" value="{{ 'unvip_user' if u.vip else 'vip_user' }}">
+                  <input type="hidden" name="target_id" value="{{ u.id }}">
+                  <button class="action-btn" type="submit" title="{{ 'إلغاء VIP' if u.vip else 'منح VIP' }}"
+                          style="color:{% if u.vip %}#f59e0b{% else %}var(--text3){% endif %}">
+                    <i class="fas fa-star"></i>
+                  </button>
+                </form>
+                <!-- Block -->
+                <form action="/admin/action" method="POST" class="d-inline">
+                  <input type="hidden" name="action" value="{{ 'unblock_user' if u.is_blocked else 'block_user' }}">
+                  <input type="hidden" name="target_id" value="{{ u.id }}">
+                  <button class="action-btn" type="submit" title="{{ 'رفع الحظر' if u.is_blocked else 'حظر' }}"
+                          style="color:{% if u.is_blocked %}var(--danger){% else %}var(--text3){% endif %}">
+                    <i class="fas fa-ban"></i>
+                  </button>
+                </form>
+                <!-- Promote to admin -->
+                {% if not u.is_admin %}
+                <form action="/admin/promote/{{ u.id }}" method="POST" class="d-inline">
+                  <button class="action-btn" type="submit" title="ترقية لمشرف">
+                    <i class="fas fa-shield-alt" style="color:var(--warning)"></i>
+                  </button>
+                </form>
+                {% endif %}
+              </div>
+            </td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+</div>
+
+<script>
+function filterUsers(q) {
+  q = q.toLowerCase();
+  document.querySelectorAll('.user-row').forEach(row => {
+    const match = row.dataset.name.includes(q) || row.dataset.handle.includes(q);
+    row.style.display = match ? '' : 'none';
+  });
+}
+</script>
+{% endblock %}

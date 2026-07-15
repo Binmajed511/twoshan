@@ -1,0 +1,102 @@
+<!-- templates/notifications.html -->
+{% extends 'base.html' %}
+{% block title %}الإشعارات — توشن{% endblock %}
+
+{% block content %}
+<div class="main-layout">
+  <aside class="left-sidebar">
+    <div class="glass-card p-0">
+      <ul class="sidebar-menu">
+        <li><a href="/"><i class="fas fa-home"></i> الرئيسية</a></li>
+        <li><a href="/notifications" class="active"><i class="fas fa-bell"></i> الإشعارات</a></li>
+        <li><a href="/messages"><i class="fas fa-envelope"></i> الرسائل</a></li>
+        <li><a href="/profile/{{ current_user.handle }}"><i class="fas fa-user-circle"></i> ملفي الشخصي</a></li>
+        <li><a href="/settings"><i class="fas fa-cog"></i> الإعدادات</a></li>
+      </ul>
+    </div>
+  </aside>
+
+  <main>
+    <div class="glass-card p-0" style="overflow:hidden">
+      <div class="p-4 border-bottom" style="border-color:var(--card-border)!important">
+        <h5 class="fw-bold mb-0">
+          <i class="fas fa-bell me-2" style="color:var(--brand)"></i>
+          الإشعارات
+        </h5>
+      </div>
+
+      {% if notifs %}
+      {% for n in notifs %}
+      <div class="notif-item notif-{{ n.type }} {{ '' if n.is_read else 'unread' }}">
+        <!-- Icon -->
+        <div class="notif-icon">
+          {% if n.type == 'like' %}<i class="fas fa-heart"></i>
+          {% elif n.type == 'follow' %}<i class="fas fa-user-plus"></i>
+          {% elif n.type == 'reply' %}<i class="fas fa-reply"></i>
+          {% elif n.type == 'retwoshan' %}<i class="fas fa-retweet"></i>
+          {% elif n.type == 'mention' %}<i class="fas fa-at"></i>
+          {% else %}<i class="fas fa-bell"></i>{% endif %}
+        </div>
+
+        <!-- User avatar -->
+        {% if n.avatar %}
+        <img src="{{ url_for('static', filename='uploads/' + n.avatar) }}"
+             class="avatar" style="width:36px;height:36px">
+        {% else %}
+        <div class="avatar-placeholder" style="width:36px;height:36px;font-size:.85rem">{{ n.username[0] }}</div>
+        {% endif %}
+
+        <!-- Content -->
+        <div class="flex-grow-1">
+          <div style="font-size:.88rem">
+            <a href="/profile/{{ n.handle }}" class="fw-bold text-decoration-none" style="color:var(--text)">
+              {{ n.username }}
+            </a>
+            {% if n.verified %}<i class="fas fa-circle-check verified-badge ms-1"></i>{% endif %}
+
+            <span style="color:var(--text2)">
+              {% if n.type == 'like' %} أعجب بتوشتك
+              {% elif n.type == 'follow' %} بدأ بمتابعتك
+              {% elif n.type == 'reply' %} رد على توشتك
+              {% elif n.type == 'retwoshan' %} أعاد توشن توشتك
+              {% elif n.type == 'mention' %} أشار إليك في توشة
+              {% else %} {{ n.message }}
+              {% endif %}
+            </span>
+          </div>
+          <div style="font-size:.75rem;color:var(--text3);margin-top:.2rem">{{ n.created_at[:16] }}</div>
+        </div>
+
+        <!-- Link to twoshan -->
+        {% if n.twoshan_id %}
+        <a href="/twoshan/{{ n.twoshan_id }}" class="action-btn" title="عرض التوشة">
+          <i class="fas fa-external-link-alt"></i>
+        </a>
+        {% endif %}
+      </div>
+      {% endfor %}
+      {% else %}
+      <div class="empty-state p-5">
+        <i class="fas fa-bell-slash"></i>
+        <p>لا توجد إشعارات حتى الآن</p>
+        <small style="color:var(--text3)">ستصلك إشعارات عند تفاعل الآخرين معك</small>
+      </div>
+      {% endif %}
+    </div>
+  </main>
+
+  <aside class="right-sidebar">
+    <div class="glass-card sidebar-section">
+      <div class="sidebar-title"><i class="fas fa-fire" style="color:var(--danger)"></i> التريندات</div>
+      {% for trend in trends %}
+      <a href="/hashtag/{{ trend.tag }}" class="d-block text-decoration-none">
+        <div class="trend-item">
+          <div class="trend-tag">#{{ trend.tag }}</div>
+          <div class="trend-count">{{ trend.use_count }} توشة</div>
+        </div>
+      </a>
+      {% endfor %}
+    </div>
+  </aside>
+</div>
+{% endblock %}

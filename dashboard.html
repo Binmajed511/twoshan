@@ -1,0 +1,212 @@
+<!-- templates/admin/dashboard.html -->
+{% extends 'base.html' %}
+{% block title %}لوحة الإدارة — توشن{% endblock %}
+
+{% block content %}
+<div class="container-fluid" style="max-width:1300px;margin:1.5rem auto;padding:0 1rem;position:relative;z-index:1">
+
+  <!-- Header -->
+  <div class="d-flex align-items-center justify-content-between mb-4 flex-wrap gap-2">
+    <div>
+      <h4 class="fw-bold mb-0">
+        <i class="fas fa-shield-alt me-2" style="color:var(--brand)"></i>
+        لوحة تحكم الإدارة
+      </h4>
+      <small style="color:var(--text3)">مرحباً {{ current_user.username }} — صلاحيات إدارة كاملة</small>
+    </div>
+    <div class="d-flex gap-2 flex-wrap">
+      <a href="/admin/users" class="btn-outline-brand" style="font-size:.85rem;padding:.4rem .9rem">
+        <i class="fas fa-users me-1"></i> المستخدمون
+      </a>
+      <a href="/admin/reports" class="btn-brand" style="font-size:.85rem;padding:.4rem .9rem">
+        <i class="fas fa-flag me-1"></i> التبليغات
+        {% if stats.reports > 0 %}
+        <span class="badge bg-light text-danger ms-1">{{ stats.reports }}</span>
+        {% endif %}
+      </a>
+      <a href="/admin/messages" class="btn-outline-brand" style="font-size:.85rem;padding:.4rem .9rem">
+        <i class="fas fa-envelope me-1"></i> الرسائل
+      </a>
+      <a href="/admin/contact-messages" class="btn-outline-brand" style="font-size:.85rem;padding:.4rem .9rem">
+        <i class="fas fa-headset me-1"></i> رسائل التواصل
+      </a>
+      <a href="/" class="btn-outline-brand" style="font-size:.85rem;padding:.4rem .9rem">
+        <i class="fas fa-home me-1"></i> الرئيسية
+      </a>
+    </div>
+  </div>
+
+  <!-- Stats grid -->
+  <div class="row g-3 mb-4">
+    {% set stat_list = [
+      ('fa-users', stats.users, 'إجمالي المستخدمين', '#6C63FF'),
+      ('fa-feather-alt', stats.twoshans, 'إجمالي التوشنات', '#06d6a0'),
+      ('fa-envelope', stats.messages, 'الرسائل الخاصة', '#f59e0b'),
+      ('fa-flag', stats.reports, 'تبليغات معلقة', '#ef4444'),
+      ('fa-heart', stats.likes, 'إجمالي الإعجابات', '#ec4899'),
+      ('fa-user-friends', stats.follows, 'علاقات المتابعة', '#3b82f6'),
+    ] %}
+    {% for icon, val, label, color in stat_list %}
+    <div class="col-6 col-md-4 col-xl-2">
+      <div class="glass-card stat-card">
+        <i class="fas {{ icon }}" style="color:{{ color }};font-size:1.5rem;margin-bottom:.5rem"></i>
+        <div class="stat-number" style="background:linear-gradient(135deg,{{ color }},{{ color }}aa);-webkit-background-clip:text;background-clip:text">{{ val }}</div>
+        <div class="stat-label">{{ label }}</div>
+      </div>
+    </div>
+    {% endfor %}
+  </div>
+
+  <div class="row g-3">
+    <!-- Recent users -->
+    <div class="col-12 col-lg-5">
+      <div class="glass-card p-0" style="overflow:hidden">
+        <div class="p-3 border-bottom d-flex justify-content-between align-items-center" style="border-color:var(--card-border)!important">
+          <span class="fw-bold"><i class="fas fa-user-plus me-2" style="color:var(--brand)"></i>آخر المستخدمين</span>
+          <a href="/admin/users" style="color:var(--brand);font-size:.82rem;text-decoration:none">عرض الكل</a>
+        </div>
+        <div style="overflow-x:auto">
+          <table class="admin-table">
+            <thead>
+              <tr>
+                <th>المستخدم</th>
+                <th>المعرف</th>
+                <th>الشارات</th>
+                <th>إجراء</th>
+              </tr>
+            </thead>
+            <tbody>
+              {% for u in recent_users %}
+              <tr>
+                <td>
+                  <div class="d-flex align-items-center gap-2">
+                    {% if u.avatar %}
+                    <img src="{{ url_for('static', filename='uploads/' + u.avatar) }}"
+                         class="avatar" style="width:30px;height:30px">
+                    {% else %}
+                    <div class="avatar-placeholder" style="width:30px;height:30px;font-size:.75rem">{{ u.username[0] }}</div>
+                    {% endif %}
+                    <span style="font-size:.85rem;font-weight:600">{{ u.username[:12] }}</span>
+                  </div>
+                </td>
+                <td style="color:var(--text3);font-size:.82rem">@{{ u.handle }}</td>
+                <td>
+                  {% if u.verified %}<i class="fas fa-circle-check verified-badge me-1"></i>{% endif %}
+                  {% if u.vip %}<span class="vip-badge me-1">VIP</span>{% endif %}
+                  {% if u.is_admin %}<span class="admin-badge">مشرف</span>{% endif %}
+                  {% if u.is_blocked %}<span class="badge bg-danger" style="font-size:.6rem">محظور</span>{% endif %}
+                </td>
+                <td>
+                  <div class="dropdown">
+                    <button class="action-btn" data-bs-toggle="dropdown"><i class="fas fa-ellipsis-h"></i></button>
+                    <ul class="dropdown-menu dropdown-menu-glass dropdown-menu-start">
+                      <li><a class="dropdown-item" href="/profile/{{ u.handle }}">
+                        <i class="fas fa-user me-2"></i>عرض الملف
+                      </a></li>
+                      <li>
+                        <form action="/admin/action" method="POST">
+                          <input type="hidden" name="action" value="{{ 'unverify_user' if u.verified else 'verify_user' }}">
+                          <input type="hidden" name="target_id" value="{{ u.id }}">
+                          <button class="dropdown-item" type="submit">
+                            <i class="fas fa-circle-check me-2 text-primary"></i>{{ 'إلغاء التوثيق' if u.verified else 'توثيق' }}
+                          </button>
+                        </form>
+                      </li>
+                      <li>
+                        <form action="/admin/action" method="POST">
+                          <input type="hidden" name="action" value="{{ 'unvip_user' if u.vip else 'vip_user' }}">
+                          <input type="hidden" name="target_id" value="{{ u.id }}">
+                          <button class="dropdown-item" type="submit">
+                            <i class="fas fa-star me-2" style="color:#f59e0b"></i>{{ 'إلغاء VIP' if u.vip else 'منح VIP' }}
+                          </button>
+                        </form>
+                      </li>
+                      <li>
+                        <form action="/admin/action" method="POST">
+                          <input type="hidden" name="action" value="{{ 'unblock_user' if u.is_blocked else 'block_user' }}">
+                          <input type="hidden" name="target_id" value="{{ u.id }}">
+                          <button class="dropdown-item text-danger" type="submit">
+                            <i class="fas fa-ban me-2"></i>{{ 'رفع الحظر' if u.is_blocked else 'حظر' }}
+                          </button>
+                        </form>
+                      </li>
+                      {% if not u.is_admin %}
+                      <li>
+                        <form action="/admin/promote/{{ u.id }}" method="POST">
+                          <button class="dropdown-item" type="submit">
+                            <i class="fas fa-shield-alt me-2 text-warning"></i>ترقية لمشرف
+                          </button>
+                        </form>
+                      </li>
+                      {% endif %}
+                    </ul>
+                  </div>
+                </td>
+              </tr>
+              {% endfor %}
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+
+    <!-- Recent twoshans -->
+    <div class="col-12 col-lg-7">
+      <div class="glass-card p-0" style="overflow:hidden">
+        <div class="p-3 border-bottom d-flex justify-content-between align-items-center" style="border-color:var(--card-border)!important">
+          <span class="fw-bold"><i class="fas fa-feather-alt me-2" style="color:var(--brand)"></i>آخر التوشنات</span>
+        </div>
+        <div style="overflow-x:auto">
+          <table class="admin-table">
+            <thead>
+              <tr>
+                <th>المؤلف</th>
+                <th>المحتوى</th>
+                <th>التاريخ</th>
+                <th>إجراء</th>
+              </tr>
+            </thead>
+            <tbody>
+              {% for t in recent_twoshans %}
+              <tr>
+                <td>
+                  <a href="/profile/{{ t.author.handle }}" style="color:var(--brand);text-decoration:none;font-size:.85rem;font-weight:600">
+                    @{{ t.author.handle }}
+                  </a>
+                </td>
+                <td style="font-size:.83rem;max-width:220px;overflow:hidden;white-space:nowrap;text-overflow:ellipsis">
+                  {% if t.is_pinned %}<i class="fas fa-thumbtack me-1" style="color:var(--brand)"></i>{% endif %}
+                  {{ t.content[:60] }}{% if t.content|length > 60 %}...{% endif %}
+                </td>
+                <td style="color:var(--text3);font-size:.78rem">{{ t.created_at[:10] }}</td>
+                <td>
+                  <div class="d-flex gap-1">
+                    <form action="/admin/action" method="POST">
+                      <input type="hidden" name="action" value="pin_twoshan">
+                      <input type="hidden" name="target_id" value="{{ t.id }}">
+                      <button class="action-btn" type="submit" title="{{ 'إلغاء التثبيت' if t.is_pinned else 'تثبيت' }}">
+                        <i class="fas fa-thumbtack" style="color:{{ 'var(--brand)' if t.is_pinned else 'var(--text3)' }}"></i>
+                      </button>
+                    </form>
+                    <a href="/twoshan/{{ t.id }}" class="action-btn" title="عرض">
+                      <i class="fas fa-eye"></i>
+                    </a>
+                    <form action="/admin/action" method="POST" onsubmit="return confirm('حذف؟')">
+                      <input type="hidden" name="action" value="delete_twoshan">
+                      <input type="hidden" name="target_id" value="{{ t.id }}">
+                      <button class="action-btn" type="submit" title="حذف" style="color:var(--danger)">
+                        <i class="fas fa-trash"></i>
+                      </button>
+                    </form>
+                  </div>
+                </td>
+              </tr>
+              {% endfor %}
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}

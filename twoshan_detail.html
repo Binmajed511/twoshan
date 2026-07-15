@@ -1,0 +1,187 @@
+<!-- templates/twoshan_detail.html -->
+{% extends 'base.html' %}
+{% block title %}توشة {{ twoshan.author.username }} — توشن{% endblock %}
+
+{% block content %}
+<div class="main-layout">
+  <aside class="left-sidebar">
+    <div class="glass-card p-0">
+      <ul class="sidebar-menu">
+        <li><a href="/"><i class="fas fa-home"></i> الرئيسية</a></li>
+        <li><a href="/notifications"><i class="fas fa-bell"></i> الإشعارات</a></li>
+        <li><a href="/messages"><i class="fas fa-envelope"></i> الرسائل</a></li>
+        <li><a href="/profile/{{ current_user.handle }}"><i class="fas fa-user-circle"></i> ملفي</a></li>
+        <li><a href="/settings"><i class="fas fa-cog"></i> الإعدادات</a></li>
+      </ul>
+    </div>
+  </aside>
+
+  <main>
+    <!-- Back button -->
+    <div class="mb-2">
+      <a href="javascript:history.back()" class="action-btn" style="font-size:.9rem">
+        <i class="fas fa-arrow-right me-1"></i> رجوع
+      </a>
+    </div>
+
+    <!-- Main twoshan (larger) -->
+    <div class="glass-card p-4 mb-3">
+      {% set t = twoshan %}
+      <div class="d-flex align-items-start gap-3">
+        <a href="/profile/{{ t.author.handle }}">
+          {% if t.author.avatar %}
+          <img src="{{ url_for('static', filename='uploads/' + t.author.avatar) }}"
+               class="twoshan-avatar" style="width:52px;height:52px">
+          {% else %}
+          <div class="avatar-placeholder" style="width:52px;height:52px;font-size:1.2rem">{{ t.author.username[0] }}</div>
+          {% endif %}
+        </a>
+        <div class="flex-grow-1">
+          <div class="d-flex align-items-center gap-2 flex-wrap">
+            <a href="/profile/{{ t.author.handle }}" class="twoshan-username fw-bold">{{ t.author.username }}</a>
+            {% if t.author.verified %}<i class="fas fa-circle-check verified-badge"></i>{% endif %}
+            {% if t.author.vip %}<span class="vip-badge">VIP</span>{% endif %}
+            {% if t.author.is_admin %}<span class="admin-badge">مشرف</span>{% endif %}
+          </div>
+          <div style="color:var(--text3);font-size:.82rem">@{{ t.author.handle }}</div>
+        </div>
+        <div class="dropdown">
+          <button class="action-btn" data-bs-toggle="dropdown"><i class="fas fa-ellipsis-h"></i></button>
+          <ul class="dropdown-menu dropdown-menu-glass dropdown-menu-start">
+            {% if t.author.handle == current_user.handle or current_user.is_admin %}
+            <li>
+              <form action="/delete/{{ t.id }}" method="POST" onsubmit="return confirm('حذف؟')">
+                <button class="dropdown-item text-danger" type="submit">
+                  <i class="fas fa-trash me-2"></i>حذف التوشة
+                </button>
+              </form>
+            </li>
+            {% endif %}
+            {% if current_user.is_admin %}
+            <li>
+              <form action="/admin/action" method="POST">
+                <input type="hidden" name="action" value="pin_twoshan">
+                <input type="hidden" name="target_id" value="{{ t.id }}">
+                <button class="dropdown-item" type="submit">
+                  <i class="fas fa-thumbtack me-2" style="color:var(--brand)"></i>
+                  {{ 'إلغاء التثبيت' if t.is_pinned else 'تثبيت' }}
+                </button>
+              </form>
+            </li>
+            {% endif %}
+            <li>
+              <button class="dropdown-item" data-bs-toggle="modal" data-bs-target="#reportModal"
+                      data-twoshan="{{ t.id }}">
+                <i class="fas fa-flag me-2 text-danger"></i>إبلاغ
+              </button>
+            </li>
+          </ul>
+        </div>
+      </div>
+
+      <!-- Content -->
+      <div class="mt-3" style="font-size:1.1rem;line-height:1.8;color:var(--text)">
+        {{ t.content_html | safe }}
+      </div>
+
+      <!-- Media -->
+      {% if t.media_url %}
+      <div class="twoshan-media mt-3">
+        {% if t.media_type == 'video' %}
+        <video controls style="width:100%;border-radius:16px">
+          <source src="{{ url_for('static', filename='uploads/' + t.media_url) }}">
+        </video>
+        {% else %}
+        <img src="{{ url_for('static', filename='uploads/' + t.media_url) }}"
+             style="width:100%;border-radius:16px">
+        {% endif %}
+      </div>
+      {% endif %}
+
+      <!-- Poll -->
+      {% if t.get('poll') %}
+      <div class="poll-container mt-3">
+        <div class="fw-bold mb-2">📊 {{ t.poll.question }}</div>
+        {% for opt in t.poll_options %}
+        {% set pct = ((opt.votes / t.poll_total * 100) | round | int) if t.poll_total > 0 else 0 %}
+        <div class="poll-option {{ 'voted' if t.poll_voted else '' }}"
+             data-option-id="{{ opt.id }}"
+             data-voted="{{ 'true' if t.poll_voted else 'false' }}">
+          <div class="poll-bar" style="width:{{ pct }}%"></div>
+          <div class="poll-option-content">
+            <span>{% if t.poll_voted == opt.id %}<i class="fas fa-check me-1" style="color:var(--brand)"></i>{% endif %}{{ opt.text }}</span>
+            <span class="poll-pct">{{ pct }}%</span>
+          </div>
+        </div>
+        {% endfor %}
+        <div class="poll-total">{{ t.poll_total }} صوت</div>
+      </div>
+      {% endif %}
+
+      <!-- Timestamp -->
+      <div class="mt-3 pb-3 border-bottom" style="border-color:var(--card-border)!important;color:var(--text3);font-size:.83rem">
+        {{ t.created_at[:16].replace('T',' ') }}
+      </div>
+
+      <!-- Stats -->
+      <div class="d-flex gap-4 py-3 border-bottom" style="border-color:var(--card-border)!important;font-size:.9rem">
+        <span><strong>{{ t.reposts }}</strong> <span style="color:var(--text3)">إعادة توشن</span></span>
+        <span><strong>{{ t.likes }}</strong> <span style="color:var(--text3)">إعجاب</span></span>
+        <span><strong>{{ t.replies }}</strong> <span style="color:var(--text3)">رد</span></span>
+      </div>
+
+      <!-- Actions -->
+      <div class="twoshan-actions mt-2">
+        <button class="action-btn" data-bs-toggle="modal" data-bs-target="#replyModal"
+                data-twoshan="{{ t.id }}" data-author="{{ t.author.handle }}">
+          <i class="far fa-comment"></i> رد
+        </button>
+        <button class="action-btn retwoshan-btn {{ 'retwoshan_ed' if t.retwoshan_ed else '' }}" data-id="{{ t.id }}">
+          <i class="fas fa-retweet"></i>
+          <span class="rt-count">{{ t.reposts }}</span>
+        </button>
+        <button class="action-btn like-btn {{ 'liked' if t.liked else '' }}" data-id="{{ t.id }}">
+          {% if t.liked %}<i class="fas fa-heart"></i>{% else %}<i class="far fa-heart"></i>{% endif %}
+          <span class="like-count">{{ t.likes }}</span>
+        </button>
+        <button class="action-btn bookmark-btn {{ 'bookmarked' if t.bookmarked else '' }}" data-id="{{ t.id }}">
+          {% if t.bookmarked %}<i class="fas fa-bookmark"></i>{% else %}<i class="far fa-bookmark"></i>{% endif %}
+        </button>
+        <button class="action-btn" onclick="navigator.clipboard.writeText(window.location.href)">
+          <i class="fas fa-share-alt"></i> نسخ الرابط
+        </button>
+      </div>
+    </div>
+
+    <!-- Replies -->
+    <h6 class="mb-2 px-1" style="color:var(--text3);font-size:.85rem;font-weight:600">
+      <i class="fas fa-comments me-1"></i> الردود ({{ replies|length }})
+    </h6>
+
+    {% if replies %}
+    {% for t in replies %}
+    {% include '_twoshan_card.html' %}
+    {% endfor %}
+    {% else %}
+    <div class="glass-card empty-state py-4">
+      <i class="far fa-comment-dots"></i>
+      <p>لا توجد ردود بعد — كن أول من يرد!</p>
+    </div>
+    {% endif %}
+  </main>
+
+  <aside class="right-sidebar">
+    <div class="glass-card sidebar-section">
+      <div class="sidebar-title"><i class="fas fa-fire" style="color:var(--danger)"></i> التريندات</div>
+      {% for trend in trends %}
+      <a href="/hashtag/{{ trend.tag }}" class="d-block text-decoration-none">
+        <div class="trend-item">
+          <div class="trend-tag">#{{ trend.tag }}</div>
+          <div class="trend-count">{{ trend.use_count }} توشة</div>
+        </div>
+      </a>
+      {% endfor %}
+    </div>
+  </aside>
+</div>
+{% endblock %}

@@ -1,0 +1,195 @@
+<!-- templates/profile.html -->
+{% extends 'base.html' %}
+{% block title %}{{ target.username }} (@{{ target.handle }}) — توشن{% endblock %}
+
+{% block content %}
+<div class="main-layout">
+  <!-- Left Sidebar -->
+  <aside class="left-sidebar">
+    <div class="glass-card p-0">
+      <ul class="sidebar-menu">
+        <li><a href="/"><i class="fas fa-home"></i> الرئيسية</a></li>
+        <li><a href="/notifications"><i class="fas fa-bell"></i> الإشعارات</a></li>
+        <li><a href="/messages"><i class="fas fa-envelope"></i> الرسائل</a></li>
+        <li><a href="/profile/{{ current_user.handle }}" class="active"><i class="fas fa-user-circle"></i> ملفي الشخصي</a></li>
+        <li><a href="/settings"><i class="fas fa-cog"></i> الإعدادات</a></li>
+        {% if current_user.is_admin %}
+        <li><a href="/admin" style="color:var(--danger)"><i class="fas fa-shield-alt"></i> لوحة الإدارة</a></li>
+        {% endif %}
+        <li style="padding:.5rem 1rem;font-size:.82rem;color:var(--text3)">
+          <span style="color:{{ '#22c55e' if target.online else '#94a3b8' }};font-weight:700">
+            ●
+          </span>
+          {{ 'متصل الآن' if target.online else 'غير متصل' }}
+        </li>
+      </ul>
+    </div>
+  </aside>
+
+  <!-- Main -->
+  <main>
+    <!-- Profile card -->
+    <div class="glass-card mb-3 p-0" style="overflow:hidden">
+      <!-- Banner -->
+      <div class="profile-banner">
+        {% if target.banner %}
+        <img src="{{ url_for('static', filename='uploads/' + target.banner) }}" alt="بانر">
+        {% endif %}
+      </div>
+
+      <!-- Info section -->
+      <div class="profile-info-section">
+        <div class="d-flex justify-content-between align-items-end flex-wrap gap-2">
+          <div class="profile-avatar-wrap" style="position:relative">
+            {% if target.avatar %}
+            <img src="{{ url_for('static', filename='uploads/' + target.avatar) }}" alt="{{ target.username }}">
+            {% else %}
+            <div class="avatar-placeholder" style="width:90px;height:90px;font-size:2rem">{{ target.username[0] }}</div>
+            {% endif %}
+            <span class="online-dot-lg {{ 'online' if target.online else 'offline' }}"
+                  title="{{ 'متصل الآن' if target.online else 'غير متصل' }}"></span>
+          </div>
+
+          <!-- Action buttons -->
+          <div class="d-flex gap-2 flex-wrap">
+            {% if target.id == current_user.id %}
+            <a href="/settings" class="btn-outline-brand"><i class="fas fa-edit me-1"></i>تعديل الملف</a>
+            {% else %}
+            <button class="follow-btn {% if is_following %}btn-outline-brand{% else %}btn-brand{% endif %}"
+                    data-id="{{ target.id }}">
+              {{ 'إلغاء المتابعة' if is_following else 'متابعة' }}
+            </button>
+            <a href="/messages/{{ target.handle }}" class="btn-outline-brand">
+              <i class="fas fa-envelope me-1"></i>رسالة
+            </a>
+            <div class="dropdown">
+              <button class="btn-outline-brand" data-bs-toggle="dropdown">
+                <i class="fas fa-ellipsis-h"></i>
+              </button>
+              <ul class="dropdown-menu dropdown-menu-glass">
+                <li>
+                  <form action="/mute/{{ target.id }}" method="POST">
+                    <button class="dropdown-item" type="submit">
+                      <i class="fas fa-volume-mute me-2"></i>{{ 'إلغاء الكتم' if is_muted else 'كتم' }}
+                    </button>
+                  </form>
+                </li>
+                <li>
+                  <form action="/block/{{ target.id }}" method="POST">
+                    <button class="dropdown-item text-danger" type="submit">
+                      <i class="fas fa-ban me-2"></i>{{ 'إلغاء الحظر' if is_blocked else 'حظر' }}
+                    </button>
+                  </form>
+                </li>
+                {% if current_user.is_admin %}
+                <li><hr class="dropdown-divider" style="border-color:var(--card-border)"></li>
+                <li>
+                  <form action="/admin/action" method="POST">
+                    <input type="hidden" name="action" value="{{ 'unverify_user' if target.verified else 'verify_user' }}">
+                    <input type="hidden" name="target_id" value="{{ target.id }}">
+                    <button class="dropdown-item" type="submit">
+                      <i class="fas fa-circle-check me-2 text-primary"></i>{{ 'إلغاء التوثيق' if target.verified else 'توثيق الحساب' }}
+                    </button>
+                  </form>
+                </li>
+                <li>
+                  <form action="/admin/action" method="POST">
+                    <input type="hidden" name="action" value="{{ 'unvip_user' if target.vip else 'vip_user' }}">
+                    <input type="hidden" name="target_id" value="{{ target.id }}">
+                    <button class="dropdown-item" type="submit">
+                      <i class="fas fa-star me-2" style="color:#f59e0b"></i>{{ 'إلغاء VIP' if target.vip else 'منح VIP' }}
+                    </button>
+                  </form>
+                </li>
+                <li>
+                  <form action="/admin/action" method="POST">
+                    <input type="hidden" name="action" value="{{ 'unblock_user' if target.is_blocked else 'block_user' }}">
+                    <input type="hidden" name="target_id" value="{{ target.id }}">
+                    <button class="dropdown-item text-danger" type="submit">
+                      <i class="fas fa-ban me-2"></i>{{ 'رفع الحظر الإداري' if target.is_blocked else 'حظر إداري' }}
+                    </button>
+                  </form>
+                </li>
+                {% endif %}
+              </ul>
+            </div>
+            {% endif %}
+          </div>
+        </div>
+
+        <!-- Name & badges -->
+        <div class="mt-2">
+          <div class="d-flex align-items-center gap-2 flex-wrap">
+            <h5 class="mb-0 fw-bold">{{ target.username }}</h5>
+            {% if target.verified %}
+            <i class="fas fa-circle-check verified-badge" title="حساب موثق"></i>
+            {% endif %}
+            {% if target.vip %}
+            <span class="vip-badge">VIP</span>
+            {% endif %}
+            {% if target.is_admin %}
+            <span class="admin-badge">مشرف توشن</span>
+            {% endif %}
+          </div>
+          <div style="color:var(--text3);font-size:.88rem">@{{ target.handle }}</div>
+          {% if target.bio %}
+          <p class="mt-2 mb-2" style="font-size:.92rem;color:var(--text2)">{{ target.bio }}</p>
+          {% endif %}
+          <div class="d-flex gap-3 mt-1" style="font-size:.88rem">
+            <span>
+              <strong style="color:var(--text)">{{ following }}</strong>
+              <span style="color:var(--text3)"> يتابع</span>
+            </span>
+            <span>
+              <strong class="followers-count" style="color:var(--text)">{{ followers }}</strong>
+              <span style="color:var(--text3)"> متابع</span>
+            </span>
+            <span style="color:var(--text3);font-size:.8rem">
+              <i class="fas fa-calendar-alt me-1"></i>انضم {{ target.created_at[:7] }}
+            </span>
+          </div>
+        </div>
+      </div>
+
+      <!-- Profile tabs -->
+      <div class="profile-tabs" style="border-top:1px solid var(--card-border)">
+        <nav class="nav nav-tabs border-0">
+          <a class="nav-link {{ 'active' if tab=='twoshans' else '' }}" href="?tab=twoshans">توشناته</a>
+          <a class="nav-link {{ 'active' if tab=='retwoshans' else '' }}" href="?tab=retwoshans">إعادة توشن</a>
+          <a class="nav-link {{ 'active' if tab=='likes' else '' }}" href="?tab=likes">الإعجابات</a>
+          {% if target.id == current_user.id or current_user.is_admin %}
+          <a class="nav-link {{ 'active' if tab=='bookmarks' else '' }}" href="?tab=bookmarks">المحفوظات</a>
+          {% endif %}
+        </nav>
+      </div>
+    </div>
+
+    <!-- Twoshans -->
+    {% if twoshans %}
+      {% for t in twoshans %}
+      {% include '_twoshan_card.html' %}
+      {% endfor %}
+    {% else %}
+    <div class="glass-card empty-state">
+      <i class="fas fa-feather-alt"></i>
+      <p>لا توجد توشنات في هذا القسم بعد</p>
+    </div>
+    {% endif %}
+  </main>
+
+  <!-- Right sidebar: who to follow -->
+  <aside class="right-sidebar">
+    <div class="glass-card sidebar-section">
+      <div class="sidebar-title"><i class="fas fa-fire" style="color:var(--danger)"></i> التريندات</div>
+      {% for trend in trends %}
+      <a href="/hashtag/{{ trend.tag }}" class="d-block text-decoration-none">
+        <div class="trend-item">
+          <div class="trend-tag">#{{ trend.tag }}</div>
+          <div class="trend-count">{{ trend.use_count }} توشة</div>
+        </div>
+      </a>
+      {% endfor %}
+    </div>
+  </aside>
+</div>
+{% endblock %}
